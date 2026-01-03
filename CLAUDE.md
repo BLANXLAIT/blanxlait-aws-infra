@@ -73,7 +73,3 @@ arn:aws:iam::982682372189:role/GitHubActionsRole
 - CloudTrail: Management events only (~$2/month S3 storage)
 - Logs transition to Intelligent-Tiering after 30 days
 - Logs expire after 365 days
-
-## Legacy CloudFormation (deprecated)
-
-The `github-*.yaml` files are the original CloudFormation templates. They can be deleted after migrating to CDK.

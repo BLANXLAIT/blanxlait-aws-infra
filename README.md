@@ -1,75 +1,42 @@
 # BLANXLAIT AWS Infrastructure
 
-Account-level AWS infrastructure for the BLANXLAIT organization.
+Account-level AWS infrastructure for the BLANXLAIT organization, managed with CDK.
 
-## What's Here
+## Stacks
 
-| Template | Purpose | Deploy Frequency |
-|----------|---------|------------------|
-| `github-oidc-provider.yaml` | GitHub Actions OIDC authentication | Once per account |
-| `github-actions-role.yaml` | IAM role for GitHub Actions | Once (org-wide) or per-repo |
+| Stack | Purpose |
+|-------|---------|
+| `GitHubOidc` | OIDC provider + IAM role for GitHub Actions |
+| `CloudTrail` | Management event trail with cost-optimized S3 storage |
 
-## Initial Setup
+## Deployment
 
-Run these commands in **AWS CloudShell** (easiest) or with configured AWS CLI.
+Pushes to `main` automatically deploy via GitHub Actions.
 
-### Step 1: OIDC Provider (skip if already exists)
-
-Check if you already have a GitHub OIDC provider:
+For manual deployment:
 ```bash
-aws iam list-open-id-connect-providers | grep token.actions.githubusercontent.com
-```
-
-If nothing is returned, deploy the provider:
-```bash
-aws cloudformation deploy \
-  --template-file github-oidc-provider.yaml \
-  --stack-name GitHubOIDC \
-  --region us-east-1
-```
-
-If you get "Provider already exists" error, that's fine - skip to Step 2.
-
-### Step 2: GitHub Actions Role
-
-```bash
-aws cloudformation deploy \
-  --template-file github-actions-role.yaml \
-  --stack-name GitHubActionsRole \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides GitHubOrg=BLANXLAIT RepoScope="*" \
-  --region us-east-1
+cd cdk
+npm install
+npx cdk deploy --all
 ```
 
 ## Using in Other Repos
 
-Any repo in the BLANXLAIT org can now use this in their GitHub Actions:
+Any repo in the BLANXLAIT org can use this in their GitHub Actions:
 
 ```yaml
-- uses: aws-actions/configure-aws-credentials@v4
-  with:
-    role-to-assume: arn:aws:iam::982682372189:role/GitHubActionsRole
-    aws-region: us-east-1
-```
+permissions:
+  id-token: write
+  contents: read
 
-## Adding More Roles
-
-For restricted access roles (e.g., read-only for CI):
-
-```bash
-aws cloudformation deploy \
-  --template-file github-actions-role.yaml \
-  --stack-name GitHubActionsRole-ReadOnly \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides \
-    RoleName=GitHubActionsRole-ReadOnly \
-    GitHubOrg=BLANXLAIT \
-    RepoScope="*" \
-    PermissionLevel=ReadOnly \
-  --region us-east-1
+steps:
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::982682372189:role/GitHubActionsRole
+      aws-region: us-east-1
 ```
 
 ## AWS Account
 
 - Account ID: `982682372189`
-- Primary Region: `us-east-1`
+- Region: `us-east-1`
