@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  GitHub Actions Role - Deploy per-repo OR once for entire org.
+  Requires github-oidc-provider.yaml to be deployed first.
+
+Parameters:
+  RoleName:
+    Type: String
+    Default: GitHubActionsRole
+    Description: Name of the IAM role
+
+  GitHubOrg:
+    Type: String
+    Default: BLANXLAIT
+    Description: GitHub organization name
+
+  RepoScope:
+    Type: String
+    Default: "*"
+    Description: |
+      Which repos can assume this role:
+      - "*" = Any repo in the org (easiest, use for org-wide deploy role)
+      - "repo-name" = Single repo
+      - "repo-*" = Repos matching pattern
+
+  PermissionLevel:
+    Type: String
+    Default: Admin
+    AllowedValues:
+      - Admin        # Full access (for CDK deploys)
+      - PowerUser    # Full access except IAM
+      - ReadOnly     # Read-only access
+    Description: Permission level for this role
+
+Conditions:
+  IsAdmin: !Equals [!Ref PermissionLevel, "Admin"]
+  IsPowerUser: !Equals [!Ref PermissionLevel, "PowerUser"]
+  IsReadOnly: !Equals [!Ref PermissionLevel, "ReadOnly"]
+
+Resources:
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !ImportValue GitHubOIDCProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepoScope}:*
+
+      ManagedPolicyArns:
+        - !If
+          - IsAdmin
+          - arn:aws:iam::aws:policy/AdministratorAccess
+          - !If
+            - IsPowerUser
+            - arn:aws:iam::aws:policy/PowerUserAccess
+            - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+      Tags:
+        - Key: Purpose
+          Value: GitHubActions
+        - Key: GitHubOrg
+          Value: !Ref GitHubOrg
+        - Key: RepoScope
+          Value: !Ref RepoScope
+
+Outputs:
+  RoleArn:
+    Description: ARN of the GitHub Actions role
+    Value: !GetAtt GitHubActionsRole.Arn
+
+  RoleName:
+    Description: Name of the role (use in GitHub Actions workflow)
+    Value: !Ref GitHubActionsRole
+
+  AssumeRoleCommand:
+    Description: Example for GitHub Actions workflow
+    Value: !Sub |
+      role-to-assume: arn:aws:iam::${AWS::AccountId}:role/${RoleName}
