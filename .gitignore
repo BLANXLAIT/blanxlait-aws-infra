@@ -10,3 +10,11 @@
 *.key
 credentials
 .env
+
+# CDK
+cdk/node_modules/
+cdk/cdk.out/
+cdk/dist/
+cdk/*.js
+cdk/*.d.ts
+!cdk/jest.config.js
