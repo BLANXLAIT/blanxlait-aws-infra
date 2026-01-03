@@ -70,8 +70,6 @@ Resources:
           Value: GitHubActions
         - Key: GitHubOrg
           Value: !Ref GitHubOrg
-        - Key: RepoScope
-          Value: !Ref RepoScope
 
 Outputs:
   RoleArn:
