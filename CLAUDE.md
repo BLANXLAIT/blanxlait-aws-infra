@@ -18,13 +18,13 @@ Account-level AWS infrastructure. Deploy via CloudShell or AWS CLI.
 ## Deployment Commands
 
 ```bash
-# OIDC Provider (one-time)
+# OIDC Provider (skip if already exists in account)
 aws cloudformation deploy \
   --template-file github-oidc-provider.yaml \
   --stack-name GitHubOIDC \
   --region us-east-1
 
-# GitHub Actions Role
+# GitHub Actions Role (works regardless of how OIDC provider was created)
 aws cloudformation deploy \
   --template-file github-actions-role.yaml \
   --stack-name GitHubActionsRole \
@@ -32,6 +32,8 @@ aws cloudformation deploy \
   --parameter-overrides GitHubOrg=BLANXLAIT RepoScope="*" \
   --region us-east-1
 ```
+
+Note: The role template references the OIDC provider by ARN directly, so it works whether the provider was created via this template, CDK, or any other method.
 
 ## Role ARN for Workflows
 

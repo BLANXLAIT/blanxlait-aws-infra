@@ -11,16 +11,28 @@ Account-level AWS infrastructure for the BLANXLAIT organization.
 
 ## Initial Setup
 
-Run these commands in AWS CloudShell or with configured AWS CLI:
+Run these commands in **AWS CloudShell** (easiest) or with configured AWS CLI.
 
+### Step 1: OIDC Provider (skip if already exists)
+
+Check if you already have a GitHub OIDC provider:
 ```bash
-# 1. Deploy OIDC Provider (required, one-time)
+aws iam list-open-id-connect-providers | grep token.actions.githubusercontent.com
+```
+
+If nothing is returned, deploy the provider:
+```bash
 aws cloudformation deploy \
   --template-file github-oidc-provider.yaml \
   --stack-name GitHubOIDC \
   --region us-east-1
+```
 
-# 2. Deploy org-wide GitHub Actions role
+If you get "Provider already exists" error, that's fine - skip to Step 2.
+
+### Step 2: GitHub Actions Role
+
+```bash
 aws cloudformation deploy \
   --template-file github-actions-role.yaml \
   --stack-name GitHubActionsRole \

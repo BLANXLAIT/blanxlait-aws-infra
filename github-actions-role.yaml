@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   GitHub Actions Role - Deploy per-repo OR once for entire org.
-  Requires github-oidc-provider.yaml to be deployed first.
+  OIDC provider must exist (deploy github-oidc-provider.yaml first, or skip if already exists).
 
 Parameters:
   RoleName:
@@ -47,7 +47,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Federated: !ImportValue GitHubOIDCProviderArn
+              # Reference OIDC provider directly (works whether created via template or already exists)
+              Federated: !Sub arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
