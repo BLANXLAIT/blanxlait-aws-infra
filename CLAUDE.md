@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Account-level AWS infrastructure managed with CDK (TypeScript). Deploys automatically via GitHub Actions using OIDC federation.
+AWS Organization infrastructure managed with CDK (TypeScript). Deploys automatically via GitHub Actions using OIDC federation.
 
 ## Account Info
 
-- **Account ID**: 982682372189
+- **Management Account**: 982682372189
+- **Log Archive Account**: 779315395440 (SecurityLake delegated admin)
 - **Region**: us-east-1
 - **Org**: BLANXLAIT (GitHub)
 
@@ -17,7 +18,13 @@ Account-level AWS infrastructure managed with CDK (TypeScript). Deploys automati
 | Stack | Purpose |
 |-------|---------|
 | `GitHubOidc` | OIDC provider + IAM role for GitHub Actions |
-| `CloudTrail` | Management trail with cost-optimized S3 storage |
+| `CloudTrail` | Organization trail for SecurityLake integration |
+
+## GitHub Secrets
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ORG_ID` | AWS Organization ID (required for CloudTrail org trail bucket policy) |
 
 ## Deployment
 
@@ -29,7 +36,7 @@ Push to `main` branch triggers deployment. See `.github/workflows/deploy.yml`.
 cd cdk
 npm install
 npx cdk bootstrap aws://982682372189/us-east-1
-npx cdk deploy --all
+AWS_ORG_ID=o-xxxxx npx cdk deploy --all
 ```
 
 ## Development Commands
@@ -57,7 +64,7 @@ cdk/
 ├── bin/infra.ts              # CDK app entry point
 └── lib/
     ├── github-oidc-stack.ts  # OIDC provider + IAM role for GitHub Actions
-    └── cloudtrail-stack.ts   # Audit trail with S3 lifecycle optimization
+    └── cloudtrail-stack.ts   # Organization trail for SecurityLake
 ```
 
 Stack configuration is defined in `cdk/cdk.json` under the `context` key (account, region, githubOrg).
@@ -70,6 +77,7 @@ arn:aws:iam::982682372189:role/GitHubActionsRole
 
 ## Cost Notes
 
-- CloudTrail: Management events only (~$2/month S3 storage)
+- CloudTrail: Organization trail, management events from all accounts
 - Logs transition to Intelligent-Tiering after 30 days
 - Logs expire after 365 days
+- SecurityLake: 7-day retention (dev configuration)

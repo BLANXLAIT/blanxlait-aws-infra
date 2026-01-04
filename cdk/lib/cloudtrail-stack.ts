@@ -38,14 +38,17 @@ export class CloudTrailStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep logs on stack deletion
     });
 
-    // CloudTrail - management events only (cost-optimized)
+    // CloudTrail - organization trail for SecurityLake integration
+    const orgId = process.env.AWS_ORG_ID || this.node.tryGetContext('orgId');
     this.trail = new cloudtrail.Trail(this, 'ManagementTrail', {
       trailName: 'management-trail',
       bucket: this.bucket,
-      isMultiRegionTrail: false, // Single region to reduce costs
-      includeGlobalServiceEvents: true, // IAM, CloudFront, etc.
+      isOrganizationTrail: true,
+      orgId,
+      isMultiRegionTrail: true,
+      includeGlobalServiceEvents: true,
       enableFileValidation: true,
-      sendToCloudWatchLogs: false, // CloudWatch Logs adds cost
+      sendToCloudWatchLogs: false,
     });
 
     // Outputs

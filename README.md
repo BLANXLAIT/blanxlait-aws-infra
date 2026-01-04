@@ -1,13 +1,32 @@
 # BLANXLAIT AWS Infrastructure
 
-Account-level AWS infrastructure for the BLANXLAIT organization, managed with CDK.
+[![Deploy CDK](https://github.com/BLANXLAIT/blanxlait-aws-infra/actions/workflows/deploy.yml/badge.svg)](https://github.com/BLANXLAIT/blanxlait-aws-infra/actions/workflows/deploy.yml)
+
+AWS Organization infrastructure managed with CDK (TypeScript).
 
 ## Stacks
 
 | Stack | Purpose |
 |-------|---------|
 | `GitHubOidc` | OIDC provider + IAM role for GitHub Actions |
-| `CloudTrail` | Management event trail with cost-optimized S3 storage |
+| `CloudTrail` | Organization trail for SecurityLake integration |
+
+## Setup
+
+### GitHub Secrets
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ORG_ID` | AWS Organization ID for CloudTrail bucket policy |
+
+### First-time Bootstrap
+
+```bash
+cd cdk
+npm install
+npx cdk bootstrap aws://982682372189/us-east-1
+AWS_ORG_ID=o-xxxxx npx cdk deploy --all
+```
 
 ## Deployment
 
@@ -16,8 +35,7 @@ Pushes to `main` automatically deploy via GitHub Actions.
 For manual deployment:
 ```bash
 cd cdk
-npm install
-npx cdk deploy --all
+AWS_ORG_ID=o-xxxxx npx cdk deploy --all
 ```
 
 ## Using in Other Repos
@@ -36,7 +54,9 @@ steps:
       aws-region: us-east-1
 ```
 
-## AWS Account
+## AWS Accounts
 
-- Account ID: `982682372189`
-- Region: `us-east-1`
+| Account | ID | Purpose |
+|---------|-----|---------|
+| Management | 982682372189 | Organization root, CDK deployment |
+| Log Archive | 779315395440 | SecurityLake delegated admin |

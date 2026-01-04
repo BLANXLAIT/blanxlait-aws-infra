@@ -42,6 +42,10 @@ jobs:
 
       - name: CDK Diff
         run: npx cdk diff --all
+        env:
+          AWS_ORG_ID: ${{ secrets.AWS_ORG_ID }}
 
       - name: CDK Deploy
         run: npx cdk deploy --all --require-approval never
+        env:
+          AWS_ORG_ID: ${{ secrets.AWS_ORG_ID }}
