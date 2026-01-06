@@ -103,10 +103,49 @@ GitHubActionsRole (Management: 982682372189)
 
 Stack configuration is defined in `cdk/cdk.json` under the `context` key (account, region, githubOrg).
 
-## Role ARN for Workflows
+## GitHub Actions Role Setup for Other Repos
 
+Any repo in the BLANXLAIT org can deploy to AWS accounts using these roles:
+
+| Account | Role ARN |
+|---------|----------|
+| Management | `arn:aws:iam::982682372189:role/GitHubActionsRole` |
+| Log Archive | `arn:aws:iam::779315395440:role/GitHubDeployRole` |
+
+### Deploy to Management Account Only
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::982682372189:role/GitHubActionsRole
+      aws-region: us-east-1
 ```
-arn:aws:iam::982682372189:role/GitHubActionsRole
+
+### Deploy to Member Account (Role Chaining)
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  # First authenticate to management account via OIDC
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::982682372189:role/GitHubActionsRole
+      aws-region: us-east-1
+
+  # Then assume role in target account
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::779315395440:role/GitHubDeployRole
+      aws-region: us-east-1
+      role-chaining: true
 ```
 
 ## Cost Notes
