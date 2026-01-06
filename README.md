@@ -6,10 +6,11 @@ AWS Organization infrastructure managed with CDK (TypeScript).
 
 ## Stacks
 
-| Stack | Purpose |
-|-------|---------|
-| `GitHubOidc` | OIDC provider + IAM role for GitHub Actions |
-| `CloudTrail` | Organization trail for SecurityLake integration |
+| Stack | Account | Purpose |
+|-------|---------|---------|
+| `GitHubOidc` | Management | OIDC provider + IAM role for GitHub Actions |
+| `CloudTrail` | Management | Organization trail for SecurityLake integration |
+| `CrossAccountRole-{id}` | Member | Deployment role for cross-account access |
 
 ## Setup
 
@@ -19,14 +20,35 @@ AWS Organization infrastructure managed with CDK (TypeScript).
 |--------|-------------|
 | `AWS_ORG_ID` | AWS Organization ID for CloudTrail bucket policy |
 
-### First-time Bootstrap
+### First-time Bootstrap (Management Account)
 
 ```bash
 cd cdk
 npm install
-npx cdk bootstrap aws://982682372189/us-east-1
-AWS_ORG_ID=o-xxxxx npx cdk deploy --all
+npx cdk bootstrap aws://982682372189/us-east-1 --profile management-admin
+AWS_ORG_ID=o-jzaozr7wc4 npx cdk deploy GitHubOidc CloudTrail --require-approval never --profile management-admin
 ```
+
+### Adding a New Member Account
+
+1. Bootstrap CDK in the target account:
+```bash
+npx cdk bootstrap aws://779315395440/us-east-1 --trust 982682372189 --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess --profile logarchive-admin
+```
+
+2. Deploy the cross-account role:
+```bash
+npx cdk deploy CrossAccountRole-779315395440 --profile management-admin
+```
+
+3. Add account to `cdk/bin/infra.ts` targetAccounts and `.github/workflows/deploy.yml` matrix
+
+### SSO Profiles
+
+| Profile | Account |
+|---------|---------|
+| `management-admin` | 982682372189 (Management) |
+| `logarchive-admin` | 779315395440 (Log Archive) |
 
 ## Deployment
 

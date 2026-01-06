@@ -15,10 +15,11 @@ AWS Organization infrastructure managed with CDK (TypeScript). Deploys automatic
 
 ## CDK Stacks
 
-| Stack | Purpose |
-|-------|---------|
-| `GitHubOidc` | OIDC provider + IAM role for GitHub Actions |
-| `CloudTrail` | Organization trail for SecurityLake integration |
+| Stack | Account | Purpose |
+|-------|---------|---------|
+| `GitHubOidc` | Management | OIDC provider + IAM role for GitHub Actions |
+| `CloudTrail` | Management | Organization trail for SecurityLake integration |
+| `CrossAccountRole-{id}` | Member accounts | Deployment role for cross-account access |
 
 ## GitHub Secrets
 
@@ -35,9 +36,30 @@ Push to `main` branch triggers deployment. See `.github/workflows/deploy.yml`.
 ```bash
 cd cdk
 npm install
-npx cdk bootstrap aws://982682372189/us-east-1
-AWS_ORG_ID=o-xxxxx npx cdk deploy --all
+npx cdk bootstrap aws://982682372189/us-east-1 --profile management-admin
+AWS_ORG_ID=o-jzaozr7wc4 npx cdk deploy GitHubOidc CloudTrail --require-approval never --profile management-admin
 ```
+
+### Bootstrap a new member account
+To enable GitHub Actions to deploy to a new member account:
+
+1. Bootstrap CDK in the target account:
+```bash
+npx cdk bootstrap aws://779315395440/us-east-1 --trust 982682372189 --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess --profile logarchive-admin
+```
+
+2. Deploy the cross-account role (from management account):
+```bash
+npx cdk deploy CrossAccountRole-779315395440 --profile management-admin
+```
+
+3. Add the account to `.github/workflows/deploy.yml` matrix
+
+**SSO Profiles:**
+| Profile | Account |
+|---------|---------|
+| `management-admin` | 982682372189 (Management) |
+| `logarchive-admin` | 779315395440 (Log Archive) |
 
 ## Development Commands
 
@@ -61,10 +83,22 @@ npx cdk deploy --all
 
 ```
 cdk/
-├── bin/infra.ts              # CDK app entry point
+├── bin/infra.ts                    # CDK app entry point
 └── lib/
-    ├── github-oidc-stack.ts  # OIDC provider + IAM role for GitHub Actions
-    └── cloudtrail-stack.ts   # Organization trail for SecurityLake
+    ├── github-oidc-stack.ts        # OIDC provider + IAM role for GitHub Actions
+    ├── cloudtrail-stack.ts         # Organization trail for SecurityLake
+    └── cross-account-role-stack.ts # Deployment role for member accounts
+```
+
+### Multi-Account Flow
+
+```
+GitHub Actions
+    │
+    ▼ (OIDC)
+GitHubActionsRole (Management: 982682372189)
+    │
+    └──▶ assume role ──▶ GitHubDeployRole (Member accounts)
 ```
 
 Stack configuration is defined in `cdk/cdk.json` under the `context` key (account, region, githubOrg).
