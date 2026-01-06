@@ -44,9 +44,10 @@ export class CrossAccountDeployRoleStack extends cdk.Stack {
     };
 
     // Create role that trusts the GitHubActionsRole from management account
+    // Include sts:TagSession for GitHub Actions configure-aws-credentials
     this.role = new iam.Role(this, 'GitHubDeployRole', {
       roleName,
-      assumedBy: new iam.ArnPrincipal(trustedRoleArn),
+      assumedBy: new iam.ArnPrincipal(trustedRoleArn).withSessionTags(),
       managedPolicies: [managedPolicies[permissionLevel]],
     });
 
